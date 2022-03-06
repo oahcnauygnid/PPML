@@ -33,4 +33,4 @@ https://blog.csdn.net/wyf2017/article/details/116230016
 
 [[双语字幕\]吴恩达深度学习deeplearning.ai_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1FT4y1E74V?from=search&seid=10343368027287118387&spm_id_from=333.337.0.0)
 
-选择感兴趣的学习 
+选择感兴趣的学习
