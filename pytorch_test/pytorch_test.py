@@ -23,6 +23,11 @@ learning_rate = 0.001
 momentum = 0.5
 
 class PRE():
+    '''
+    class for pre process
+    pre(): deal with the data
+    next(): get a batch
+    '''
     
     def __init__(self,inputdir,mode="train"):
         self.mode = mode
@@ -35,11 +40,11 @@ class PRE():
 
         self.pre()
 
-    '''
-    pre process
-    for mnist: inputdir: inputdir/xx-ubyte
-    '''
     def pre(self):
+        '''
+        pre process
+        for mnist: inputdir: inputdir/xx-ubyte
+        '''
         if(self.mode=="test"):
             labels_file = os.path.join(self.inputdir,"t10k-labels.idx1-ubyte")
             images_file = os.path.join(self.inputdir,"t10k-images.idx3-ubyte")
@@ -62,14 +67,15 @@ class PRE():
         if(self.data_size%self.batch_size!=0):
             self.batchs_in_one_epoch+=1
     
-    '''
-    return a batch_size of data and labels
-    if an end of one epoch, return [],[]
-    call it and check len(x)<batch_size means an end of one epoch
-    if len(x)==0 then break; 
-    if 0<len(x)<batch_size then deal with the remaining items and break
-    '''
+
     def next(self):
+        '''
+        return a batch_size of data and labels
+        if an end of one epoch, return [],[]
+        call it and check len(x)<batch_size means an end of one epoch
+        if len(x)==0 then break; 
+        if 0<len(x)<batch_size then deal with the remaining items and break
+        '''
         if(self.batch_index==0):
             state = np.random.get_state()
             np.random.shuffle(self.x)
@@ -112,18 +118,25 @@ class CNN (nn.Module):
         x = self.fc1(x)             # (batch_size, 10)
         return x
 
-'''
-run:
-datadir: data
-modeldir: train mode is modeldir, ortherwise is modelfile
-mode: maybe "train", "continue_train" or "test"
-'''
+
 def run(datadir,model,mode="train",run_epochs=epochs):
+    '''
+    run:
+    datadir: data
+    model: train mode is modeldir, ortherwise is modelfile
+    mode: maybe "train", "continue_train" or "test"
+    '''
     net = CNN()     
-    if(mode!="train"):
-        net.load_state_dict(torch.load(model))
-    net = net.to(device) 
     optimizer = optim.SGD(net.parameters(),lr=learning_rate,momentum=momentum)
+    if(mode!="train"):
+        checkpoint = torch.load(model)  
+        net.load_state_dict(checkpoint['net'])  
+        optimizer.load_state_dict(checkpoint['optimizer'])
+    net = net.to(device) 
+    checkpoint = {
+        "net": net.state_dict(),
+        'optimizer':optimizer.state_dict()
+    }
     #CrossEntropyLoss要输入的input是模型的分类结果，one-hot形式，batch_szie*n，target是直接的类别，n
     compute_loss=nn.CrossEntropyLoss()
     pre = PRE(datadir,mode)
@@ -177,10 +190,12 @@ def run(datadir,model,mode="train",run_epochs=epochs):
         
         #train needs save models
         if(mode!="test"):
+            if(not os.path.exists(model)):
+                os.makedirs(model)
             modelpath = f"{model}/mnist_net{e+1}.pth"
             if(mode=="continue_train"):
                 modelpath = f"{modelfile[:-4]}+{e+1}.pth"
-            torch.save(net.state_dict(), modelpath)
+            torch.save(checkpoint, modelpath)
 
         #test only needs one epoch
         if(mode=="test"):
@@ -191,12 +206,13 @@ def run(datadir,model,mode="train",run_epochs=epochs):
 
 
 if __name__ =="__main__":
-    inputdir = "D:/vscode/workspace/python/ETI/dataset/mnist_dataset"
-    modeldir = "D:/vscode/workspace/python/ETI/models/cnn_mnist"
-    modelfile = "D:/vscode/workspace/python/ETI/models/cnn_mnist/mnist_net10.pth"
+    inputdir = "D:/vscode/workspace/python/PPML/dataset/mnist_dataset"
+    modeldir = "D:/vscode/workspace/python/PPML/models/cnn_mnist"
+    modelfile = "D:/vscode/workspace/python/PPML/models/cnn_mnist/mnist_net10+20.pth"
     #"train", "continue_train", "test"
-    run(inputdir,modeldir,mode="train")
-    print("done")
-    run(inputdir,modelfile,mode="continue_train",run_epochs=20)
-    print("done")
+    # run(inputdir,modeldir,mode="train")
+    # print("done")
+    # run(inputdir,modelfile,mode="continue_train",run_epochs=20)
+    # print("done")
     run(inputdir,modelfile,mode="test")
+    print("done")
